@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Register - Match-3 Game</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card" style="max-width: 400px; margin: 0 auto;">
+            <h2>📝 Register</h2>
+            <form id="registerForm">
+                <input type="text" id="nickname" placeholder="Nickname" required>
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit">Register</button>
+            </form>
+            <div id="message"></div>
+            <div id="verifySection" style="display: none;">
+                <hr>
+                <h3>Verify Email</h3>
+                <input type="text" id="code" placeholder="Enter 6-digit code">
+                <button onclick="verifyEmail()">Verify</button>
+                <div id="verifyMessage"></div>
+            </div>
+            <p style="margin-top: 20px; text-align: center;">
+                Already have an account? <a href="login.html">Login</a>
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let lastEmail = '';
+        
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nickname = document.getElementById('nickname').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+            
+            try {
+                const response = await fetch(`${API_URL}/api/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nickname, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    lastEmail = email;
+                    messageDiv.innerHTML = '<div class="success">✅ Registration successful! Check your email for verification code.</div>';
+                    document.getElementById('verifySection').style.display = 'block';
+                } else {
+                    messageDiv.innerHTML = `<div class="error">❌ ${data.detail || 'Registration failed'}</div>`;
+                }
+            } catch (err) {
+                messageDiv.innerHTML = '<div class="error">❌ Connection error</div>';
+            }
+        });
+        
+        async function verifyEmail() {
+            const code = document.getElementById('code').value;
+            const verifyMessage = document.getElementById('verifyMessage');
+            
+            try {
+                const response = await fetch(`${API_URL}/api/verify-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: lastEmail, code })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    verifyMessage.innerHTML = '<div class="success">✅ Email verified! You can now <a href="login.html">login</a>.</div>';
+                } else {
+                    verifyMessage.innerHTML = `<div class="error">❌ ${data.detail || 'Invalid code'}</div>`;
+                }
+            } catch (err) {
+                verifyMessage.innerHTML = '<div class="error">❌ Verification failed</div>';
+            }
+        }
+    </script>
+</body>
+</html>

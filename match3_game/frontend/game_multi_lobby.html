@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>ВесёлыйРяд | Мультиплеер</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            min-height: 100vh;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid #ff1493;
+            border-radius: 16px;
+            margin-bottom: 25px;
+        }
+        .logo {
+            font-size: 1.6rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #fff, #ff1493);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 20px;
+            padding: 8px 15px;
+            border-radius: 10px;
+            transition: 0.3s;
+        }
+        .nav-links a:hover { background: rgba(255, 20, 147, 0.2); }
+        .game-card {
+            background: rgba(15, 15, 25, 0.95);
+            border: 1px solid #ff1493;
+            border-radius: 24px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.2);
+        }
+        h2 { color: #ff1493; margin-bottom: 20px; }
+        canvas {
+            background: #1a1a2e;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 20, 147, 0.3);
+            margin: 15px 0;
+        }
+        .scores {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            gap: 20px;
+        }
+        .score-box {
+            flex: 1;
+            background: rgba(20, 20, 30, 0.5);
+            border-radius: 16px;
+            padding: 15px;
+        }
+        .score-label { font-size: 14px; opacity: 0.7; }
+        .score-value { font-size: 32px; font-weight: bold; color: #ff1493; }
+        .timer {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffa502;
+            margin: 15px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 12px;
+            margin: 10px 0;
+        }
+        .waiting { background: rgba(255,165,0,0.2); color: #ffa502; }
+        .playing { background: rgba(0,255,0,0.1); color: #0f0; }
+        button {
+            background: linear-gradient(135deg, #ff1493, #ff6b9d);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">🎮 ВесёлыйРяд | МУЛЬТИПЛЕЕР</div>
+            <div class="nav-links">
+                <a href="index.html">Главная</a>
+                <a href="game_solo.html">Соло</a>
+                <a href="profile.html">Профиль</a>
+            </div>
+        </div>
+
+        <div class="game-card">
+            <h2>👥 Режим vs</h2>
+            
+            <div id="lobby" style="margin-bottom: 20px;">
+                <button id="findBtn" onclick="findMatch()">🔍 Найти соперника</button>
+                <button id="cancelBtn" onclick="cancelSearch()" style="display:none;">❌ Отменить поиск</button>
+            </div>
+
+            <div id="gameArea" style="display: none;">
+                <div class="scores">
+                    <div class="score-box">
+                        <div class="score-label">Вы</div>
+                        <div class="score-value" id="myScore">0</div>
+                    </div>
+                    <div class="score-box">
+                        <div class="score-label">Соперник</div>
+                        <div class="score-value" id="opponentScore">0</div>
+                    </div>
+                </div>
+                <div class="timer" id="timer">60</div>
+                <canvas id="gameCanvas" width="480" height="480"></canvas>
+            </div>
+
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const SIZE = 8;
+        const TILE_SIZE = 60;
+        
+        const TILES = ['🔴', '🔵', '🟢', '🟡', '🟣', '🟠'];
+        const COLORS = {
+            '🔴': '#ff4757', '🔵': '#45aaf2', '🟢': '#2ed573',
+            '🟡': '#ffa502', '🟣': '#a55eea', '🟠': '#ff7f50'
+        };
+
+        let ws = null;
+        let board = [];
+        let selectedRow = null, selectedCol = null;
+        let myScore = 0, opponentScore = 0;
+        let isAnimating = false;
+        let gameActive = false;
+        let currentRoomId = null;
+        let searching = false;
+        const API = 'http://localhost:8000';
+
+        function connectWebSocket() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                alert('Сначала войдите в игру!');
+                window.location.href = 'index.html';
+                return;
+            }
+            ws = new WebSocket(`${API.replace('http', 'ws')}/ws/${token}`);
+            
+            ws.onopen = () => console.log('WebSocket подключён');
+            ws.onmessage = (event) => handleMessage(JSON.parse(event.data));
+            ws.onclose = () => console.log('WebSocket отключён');
+        }
+
+        function handleMessage(msg) {
+            console.log('Получено:', msg.type);
+            
+            switch(msg.type) {
+                case 'waiting':
+                    document.getElementById('status').innerHTML = '<div class="status waiting">⏳ Ищем соперника...</div>';
+                    break;
+                    
+                case 'game_start':
+                    searching = false;
+                    gameActive = true;
+                    currentRoomId = msg.room_id;
+                    board = msg.field;
+                    myScore = 0;
+                    opponentScore = 0;
+                    document.getElementById('myScore').innerText = '0';
+                    document.getElementById('opponentScore').innerText = '0';
+                    document.getElementById('timer').innerText = msg.timer;
+                    document.getElementById('gameArea').style.display = 'block';
+                    document.getElementById('lobby').style.display = 'none';
+                    document.getElementById('status').innerHTML = '<div class="status playing">🎮 Игра началась!</div>';
+                    drawBoard();
+                    break;
+                    
+                case 'update':
+                    board = msg.field;
+                    myScore = msg.scores.you;
+                    opponentScore = msg.scores.opponent;
+                    document.getElementById('myScore').innerText = myScore;
+                    document.getElementById('opponentScore').innerText = opponentScore;
+                    drawBoard();
+                    isAnimating = false;
+                    break;
+                    
+                case 'timer':
+                    document.getElementById('timer').innerText = msg.time;
+                    if (msg.time <= 10) {
+                        document.getElementById('timer').style.color = '#ff4757';
+                    }
+                    break;
+                    
+                case 'game_over':
+                    gameActive = false;
+                    let resultMsg = msg.winner === 'Победа!' ? '🎉 ВЫ ПОБЕДИЛИ! 🎉' : 
+                                   msg.winner === 'Поражение!' ? '😔 Вы проиграли...' : '🤝 Ничья!';
+                    alert(`${resultMsg}\nВаш счёт: ${msg.score}`);
+                    resetToLobby();
+                    break;
+                    
+                case 'search_cancelled':
+                    searching = false;
+                    document.getElementById('findBtn').disabled = false;
+                    document.getElementById('findBtn').style.display = 'inline-block';
+                    document.getElementById('cancelBtn').style.display = 'none';
+                    document.getElementById('status').innerHTML = '';
+                    break;
+                    
+                case 'room_closed':
+                    resetToLobby();
+                    break;
+            }
+        }
+
+        function findMatch() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                connectWebSocket();
+                setTimeout(() => findMatch(), 500);
+                return;
+            }
+            searching = true;
+            ws.send(JSON.stringify({ type: 'find_match' }));
+            document.getElementById('findBtn').disabled = true;
+            document.getElementById('findBtn').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+        }
+
+        function cancelSearch() {
+            if (ws && searching) {
+                ws.send(JSON.stringify({ type: 'cancel_search' }));
+                searching = false;
+            }
+            resetToLobby();
+        }
+
+        function resetToLobby() {
+            gameActive = false;
+            currentRoomId = null;
+            searching = false;
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('lobby').style.display = 'block';
+            document.getElementById('findBtn').disabled = false;
+            document.getElementById('findBtn').style.display = 'inline-block';
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('status').innerHTML = '';
+        }
+
+        function makeMove(r1, c1, r2, c2) {
+            if (!gameActive || isAnimating || !ws) return false;
+            
+            isAnimating = true;
+            ws.send(JSON.stringify({
+                type: 'move',
+                room_id: currentRoomId,
+                from_row: r1,
+                from_col: c1,
+                to_row: r2,
+                to_col: c2
+            }));
+            return true;
+        }
+
+        function handleCanvasClick(e) {
+            if (!gameActive || isAnimating) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            const col = Math.floor(x / TILE_SIZE);
+            const row = Math.floor(y / TILE_SIZE);
+            
+            if (row < 0 || row >= SIZE || col < 0 || col >= SIZE) return;
+            
+            if (selectedRow === null) {
+                selectedRow = row;
+                selectedCol = col;
+                drawBoard();
+            } else {
+                makeMove(selectedRow, selectedCol, row, col);
+                selectedRow = null;
+                selectedCol = null;
+                drawBoard();
+            }
+        }
+
+        function drawBoard() {
+            if (!board.length) return;
+            for (let row = 0; row < SIZE; row++) {
+                for (let col = 0; col < SIZE; col++) {
+                    const x = col * TILE_SIZE;
+                    const y = row * TILE_SIZE;
+                    const tile = board[row][col];
+                    ctx.fillStyle = COLORS[tile] || '#2d3436';
+                    ctx.fillRect(x, y, TILE_SIZE - 2, TILE_SIZE - 2);
+                    if (tile) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 34px "Segoe UI"';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(tile, x + TILE_SIZE/2, y + TILE_SIZE/2);
+                    }
+                    if (selectedRow === row && selectedCol === col && gameActive) {
+                        ctx.strokeStyle = '#ffd700';
+                        ctx.lineWidth = 4;
+                        ctx.strokeRect(x, y, TILE_SIZE - 2, TILE_SIZE - 2);
+                    }
+                }
+            }
+        }
+
+        canvas.addEventListener('click', handleCanvasClick);
+        
+        // Проверка авторизации
+        if (!localStorage.getItem('access_token')) {
+            window.location.href = 'index.html';
+        } else {
+            connectWebSocket();
+        }
+    </script>
+</body>
+</html>

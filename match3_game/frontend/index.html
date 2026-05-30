@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ВесёлыйРяд | Главная</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            line-height: 1.6;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 20, 147, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 20, 147, 0.3);
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #fff, #ff1493);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px rgba(255, 20, 147, 0.3);
+        }
+        .nav-links { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .nav-links a:hover { background: rgba(255, 20, 147, 0.2); text-shadow: 0 0 5px #ff1493; }
+        .card {
+            background: rgba(15, 15, 25, 0.9);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 20, 147, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .card:hover { border-color: rgba(255, 20, 147, 0.5); box-shadow: 0 8px 32px rgba(255, 20, 147, 0.1); }
+        .card h2 { color: #ff1493; margin-bottom: 1.5rem; font-size: 1.5rem; letter-spacing: -0.5px; }
+        .card h3 { color: #fff; margin-bottom: 1rem; font-size: 1.2rem; }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            margin: 8px 0;
+            background: rgba(20, 20, 30, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        input:focus {
+            outline: none;
+            border-color: #ff1493;
+            box-shadow: 0 0 10px rgba(255, 20, 147, 0.3);
+        }
+        input::placeholder { color: rgba(255, 255, 255, 0.3); }
+        button {
+            background: linear-gradient(135deg, #ff1493, #ff6b9d);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 8px 5px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255, 20, 147, 0.4); }
+        button:active { transform: translateY(0); }
+        .success { background: rgba(0, 255, 0, 0.1); color: #0f0; padding: 10px; border-radius: 10px; margin-top: 10px; border: 1px solid #0f0; }
+        .error { background: rgba(255, 0, 0, 0.1); color: #f55; padding: 10px; border-radius: 10px; margin-top: 10px; border: 1px solid #f00; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .leaderboard-list { list-style: none; }
+        .leaderboard-list li {
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(20, 20, 30, 0.5);
+            border-radius: 12px;
+            border-left: 3px solid #ff1493;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rank { font-weight: bold; color: #ff1493; width: 40px; }
+        .welcome { font-size: 1.2rem; color: #ff1493; margin-bottom: 20px; }
+        .code-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,20,147,0.2); }
+        hr { border-color: rgba(255,20,147,0.2); margin: 1rem 0; }
+        .test-users {
+            background: rgba(255,20,147,0.1);
+            border-radius: 12px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        @media (max-width: 768px) { .row { grid-template-columns: 1fr; } .container { padding: 1rem; } .navbar { flex-direction: column; gap: 1rem; } }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0f; }
+        ::-webkit-scrollbar-thumb { background: #ff1493; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="logo">🎮 ВесёлыйРяд</div>
+            <div class="nav-links" id="navLinks">
+                <a href="game_solo.html">🎯 Соло</a>
+                <a href="game_multi.html">👥 Мультиплеер</a>
+                <a href="profile.html">👤 Профиль</a>
+                <a href="admin.html" id="adminLink" style="display: none;">👑 Админ-панель</a>
+            </div>
+        </nav>
+
+        <div id="authBlock" class="row">
+            <div class="card">
+                <h2>📝 Регистрация</h2>
+                <input type="text" id="reg_nickname" placeholder="Никнейм">
+                <input type="email" id="reg_email" placeholder="Email">
+                <input type="password" id="reg_password" placeholder="Пароль">
+                <button onclick="register()">Создать аккаунт</button>
+                <div id="reg_result"></div>
+                <div id="verify_block" style="display: none;" class="code-section">
+                    <hr>
+                    <h3>🔐 Подтверждение</h3>
+                    <input type="text" id="verify_code" placeholder="Код из 6 цифр">
+                    <button onclick="verifyEmail()">Подтвердить</button>
+                    <div id="verify_result"></div>
+                </div>
+                <div class="test-users">
+                    📋 Тестовые аккаунты:<br>
+                    🔴 Админ: test@match3.com / 123456<br>
+                    🟢 Игрок: player@test.com / 123456
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🔓 Вход</h2>
+                <input type="email" id="login_email" placeholder="Email">
+                <input type="password" id="login_password" placeholder="Пароль">
+                <button onclick="login()">Войти</button>
+                <div id="login_result"></div>
+            </div>
+        </div>
+
+        <div id="userInfoBlock" style="display: none;">
+            <div class="card">
+                <h2>👋 Добро пожаловать, <span id="userNickname"></span>!</h2>
+                <div id="userRole" style="margin-bottom: 15px;"></div>
+                <button onclick="logout()" style="background: rgba(255,20,147,0.3);">🚪 Выйти</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🏆 Таблица лидеров</h2>
+            <div class="row">
+                <div>
+                    <h3>🎮 Мультиплеер (PTS)</h3>
+                    <div id="multi_leaderboard" class="leaderboard-list">Загрузка...</div>
+                </div>
+                <div>
+                    <h3>⭐ Соло рекорды</h3>
+                    <div id="solo_leaderboard" class="leaderboard-list">Загрузка...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8000';
+        let lastEmail = '';
+
+        function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                document.getElementById('authBlock').style.display = 'none';
+                document.getElementById('userInfoBlock').style.display = 'block';
+                loadUserInfo();
+                checkAdmin();
+            } else {
+                document.getElementById('authBlock').style.display = 'grid';
+                document.getElementById('userInfoBlock').style.display = 'none';
+            }
+        }
+
+        async function loadUserInfo() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+            try {
+                const res = await fetch(`${API}/api/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    document.getElementById('userNickname').innerText = user.nickname;
+                    const roleDiv = document.getElementById('userRole');
+                    if (user.is_admin) {
+                        roleDiv.innerHTML = '<span style="background: #ff1493; padding: 4px 12px; border-radius: 20px;">👑 Администратор</span>';
+                    } else {
+                        roleDiv.innerHTML = '<span style="background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px;">🎮 Игрок</span>';
+                    }
+                } else {
+                    logout();
+                }
+            } catch(e) { console.log('Ошибка загрузки профиля'); }
+        }
+
+        async function checkAdmin() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+            try {
+                const res = await fetch(`${API}/api/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const user = await res.json();
+                if (user.is_admin) {
+                    document.getElementById('adminLink').style.display = 'inline-block';
+                } else {
+                    document.getElementById('adminLink').style.display = 'none';
+                }
+            } catch(e) {}
+        }
+
+        async function register() {
+            const nickname = document.getElementById('reg_nickname').value;
+            const email = document.getElementById('reg_email').value;
+            const password = document.getElementById('reg_password').value;
+            const resultDiv = document.getElementById('reg_result');
+
+            if (!nickname || !email || !password) {
+                resultDiv.innerHTML = '<div class="error">❌ Заполните все поля!</div>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API}/api/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nickname, email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    lastEmail = email;
+                    resultDiv.innerHTML = '<div class="success">✅ Регистрация успешна! Введите код подтверждения.</div>';
+                    document.getElementById('verify_block').style.display = 'block';
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ ${data.detail || 'Ошибка'}</div>`;
+                }
+            } catch(e) {
+                resultDiv.innerHTML = '<div class="error">❌ Ошибка соединения</div>';
+            }
+        }
+
+        async function verifyEmail() {
+            const code = document.getElementById('verify_code').value;
+            const resultDiv = document.getElementById('verify_result');
+
+            try {
+                const res = await fetch(`${API}/api/verify-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: lastEmail, code })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    resultDiv.innerHTML = '<div class="success">✅ Email подтверждён! Теперь можно войти.</div>';
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ ${data.detail || 'Неверный код'}</div>`;
+                }
+            } catch(e) {
+                resultDiv.innerHTML = '<div class="error">❌ Ошибка проверки</div>';
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('login_email').value;
+            const password = document.getElementById('login_password').value;
+            const resultDiv = document.getElementById('login_result');
+
+            try {
+                const res = await fetch(`${API}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('access_token', data.access_token);
+                    resultDiv.innerHTML = '<div class="success">✅ Вход выполнен! Добро пожаловать.</div>';
+                    setTimeout(() => { location.reload(); }, 1000);
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ ${data.detail || 'Неверный email или пароль'}</div>`;
+                }
+            } catch(e) {
+                resultDiv.innerHTML = '<div class="error">❌ Ошибка соединения</div>';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            location.reload();
+        }
+
+        async function loadLeaderboards() {
+            try {
+                const [multi, solo] = await Promise.all([
+                    fetch(`${API}/api/leaderboard/multi`).then(r => r.json()),
+                    fetch(`${API}/api/leaderboard/solo`).then(r => r.json())
+                ]);
+
+                const multiDiv = document.getElementById('multi_leaderboard');
+                const soloDiv = document.getElementById('solo_leaderboard');
+
+                if (multi.length === 0) {
+                    multiDiv.innerHTML = '<li style="opacity:0.5;">Нет игроков</li>';
+                } else {
+                    multiDiv.innerHTML = multi.map((p, i) => `
+                        <li><span class="rank">${i+1}</span> <strong>${p.nickname}</strong> <span style="color:#ff1493;">${p.pts} PTS</span></li>
+                    `).join('');
+                }
+
+                if (solo.length === 0) {
+                    soloDiv.innerHTML = '<li style="opacity:0.5;">Нет рекордов</li>';
+                } else {
+                    soloDiv.innerHTML = solo.map((p, i) => `
+                        <li><span class="rank">${i+1}</span> <strong>${p.nickname}</strong> <span style="color:#ff1493;">${p.record} очков</span></li>
+                    `).join('');
+                }
+            } catch(e) {
+                console.error('Рейтинг не загружен');
+            }
+        }
+
+        checkAuth();
+        loadLeaderboards();
+        setInterval(loadLeaderboards, 30000);
+    </script>
+</body>
+</html>

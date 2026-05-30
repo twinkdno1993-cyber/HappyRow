@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Админ-панель | ВесёлыйРяд</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: #ff1493; margin-bottom: 20px; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(15,15,25,0.9);
+            border: 1px solid #ff1493;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-value { font-size: 28px; font-weight: bold; color: #ff1493; }
+        .stat-label { font-size: 14px; opacity: 0.7; margin-top: 5px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(15,15,25,0.9);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,20,147,0.2);
+        }
+        th { background: rgba(255,20,147,0.2); color: #ff1493; }
+        tr:hover { background: rgba(255,20,147,0.1); }
+        button {
+            background: #ff1493;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 0 3px;
+        }
+        button.danger { background: #ff4757; }
+        button.warning { background: #ffa502; }
+        .search {
+            margin-bottom: 20px;
+            padding: 10px;
+            width: 300px;
+            background: rgba(20,20,30,0.9);
+            border: 1px solid #ff1493;
+            border-radius: 10px;
+            color: #fff;
+        }
+        .nav-links {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        .nav-links a {
+            color: #ff1493;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: rgba(255,20,147,0.1);
+            border-radius: 10px;
+        }
+        .success { color: #0f0; }
+        .error { color: #f55; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👑 Админ-панель | ВесёлыйРяд</h1>
+        
+        <div class="nav-links">
+            <a href="index.html">🏠 На главную</a>
+            <a href="admin.html">🔄 Обновить</a>
+        </div>
+
+        <div id="stats" class="stats">Загрузка статистики...</div>
+
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="searchInput" class="search" placeholder="🔍 Поиск по нику или email...">
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table id="usersTable">
+                <thead>
+                    <tr><th>ID</th><th>Никнейм</th><th>Email</th><th>PTS (Мульти)</th><th>Соло рекорд</th><th>Подтверждён</th><th>Действия</th></tr>
+                </thead>
+                <tbody id="usersList"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8000';
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API}/api/admin/stats`);
+                const stats = await res.json();
+                document.getElementById('stats').innerHTML = `
+                    <div class="stat-card"><div class="stat-value">${stats.total_users}</div><div class="stat-label">Всего игроков</div></div>
+                    <div class="stat-card"><div class="stat-value">${stats.verified_users}</div><div class="stat-label">Подтверждённых</div></div>
+                    <div class="stat-card"><div class="stat-value">${stats.avg_multiplayer_pts}</div><div class="stat-label">Средний PTS</div></div>
+                    <div class="stat-card"><div class="stat-value">${stats.avg_solo_record}</div><div class="stat-label">Средний соло-рекорд</div></div>
+                    <div class="stat-card"><div class="stat-value">${stats.top_multiplayer || '-'}</div><div class="stat-label">Топ мультиплеер</div></div>
+                    <div class="stat-card"><div class="stat-value">${stats.top_solo || '-'}</div><div class="stat-label">Топ соло</div></div>
+                `;
+            } catch(e) { console.error('Ошибка загрузки статистики'); }
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(`${API}/api/admin/users`);
+                const users = await res.json();
+                displayUsers(users);
+            } catch(e) { console.error('Ошибка загрузки пользователей'); }
+        }
+
+        function displayUsers(users) {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = users.filter(u => 
+                u.nickname.toLowerCase().includes(searchTerm) || 
+                u.email.toLowerCase().includes(searchTerm)
+            );
+            
+            document.getElementById('usersList').innerHTML = filtered.map(u => `
+                <tr>
+                    <td>${u.id}</td>
+                    <td><strong>${u.nickname}</strong> ${u.is_admin ? '👑' : ''}</td>
+                    <td>${u.email}</td>
+                    <td>${u.pts_multiplayer}</td>
+                    <td>${u.pts_solo_record}</td>
+                    <td>${u.email_verified ? '✅' : '❌'}</td>
+                    <td>
+                        <button onclick="resetUser(${u.id}, 'solo')" class="warning">Сбросить соло</button>
+                        <button onclick="resetUser(${u.id}, 'multi')" class="warning">Сбросить PTS</button>
+                        <button onclick="deleteUser(${u.id}, '${u.nickname}')" class="danger">Удалить</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function resetUser(userId, type) {
+            if (!confirm(`Сбросить ${type === 'solo' ? 'соло-рекорд' : 'PTS рейтинг'} пользователю?`)) return;
+            try {
+                const endpoint = type === 'solo' ? 'reset-solo-user' : 'reset-multi-user';
+                const res = await fetch(`${API}/api/admin/${endpoint}/${userId}`, { method: 'POST' });
+                if (res.ok) {
+                    alert('Сброшено!');
+                    loadUsers();
+                    loadStats();
+                } else {
+                    alert('Ошибка');
+                }
+            } catch(e) { alert('Ошибка'); }
+        }
+
+        async function deleteUser(userId, nickname) {
+            if (!confirm(`Удалить пользователя "${nickname}"? Это действие необратимо!`)) return;
+            try {
+                const res = await fetch(`${API}/api/admin/users/${userId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert('Пользователь удалён');
+                    loadUsers();
+                    loadStats();
+                } else {
+                    alert('Ошибка');
+                }
+            } catch(e) { alert('Ошибка'); }
+        }
+
+        // Добавим дополнительные эндпоинты для сброса конкретного пользователя
+        async function addExtraEndpoints() {
+            // Эти эндпоинты нужно добавить в main.py
+            console.log('Для сброса отдельных пользователей добавьте эндпоинты в main.py');
+        }
+
+        document.getElementById('searchInput').addEventListener('input', () => loadUsers());
+        
+        loadStats();
+        loadUsers();
+        setInterval(() => { loadStats(); loadUsers(); }, 30000);
+    </script>
+</body>
+</html>

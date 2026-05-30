@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>ВесёлыйРяд | Профиль</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            min-height: 100vh;
+        }
+        .container { max-width: 600px; margin: 0 auto; padding: 2rem; }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid #ff1493;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #fff, #ff1493);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .nav-links { display: flex; gap: 1rem; }
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        .nav-links a:hover { background: rgba(255, 20, 147, 0.2); }
+        .card {
+            background: rgba(15, 15, 25, 0.95);
+            border: 1px solid #ff1493;
+            border-radius: 24px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.2);
+        }
+        .avatar-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 1.5rem;
+            cursor: pointer;
+        }
+        .avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 3px solid #ff1493;
+            object-fit: cover;
+            transition: 0.3s;
+        }
+        .avatar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        .avatar-container:hover .avatar-overlay {
+            opacity: 1;
+        }
+        .avatar-overlay span {
+            font-size: 24px;
+        }
+        #avatar_input {
+            display: none;
+        }
+        h2 { color: #ff1493; margin-bottom: 0.5rem; }
+        .stat {
+            background: rgba(20, 20, 30, 0.5);
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+        }
+        .stat-value { font-size: 2rem; font-weight: bold; color: #ff1493; }
+        .logout-btn {
+            background: rgba(255, 20, 147, 0.3);
+            border: 1px solid #ff1493;
+            margin-top: 1rem;
+            padding: 10px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+            color: #fff;
+        }
+        .logout-btn:hover {
+            background: rgba(255, 20, 147, 0.5);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="logo">🎮 ВесёлыйРяд</div>
+            <div class="nav-links">
+                <a href="index.html">Главная</a>
+                <a href="game_solo.html">Соло</a>
+                <a href="game_multi.html">Мультиплеер</a>
+            </div>
+        </nav>
+
+        <div class="card">
+            <div class="avatar-container" onclick="document.getElementById('avatar_input').click()">
+                <img id="avatar" class="avatar" src="assets/default_avatar.png" alt="Avatar">
+                <div class="avatar-overlay">
+                    <span>📷</span>
+                </div>
+            </div>
+            <input type="file" id="avatar_input" accept="image/*">
+            <h2 id="nickname">—</h2>
+            <p id="email" style="opacity:0.7;">—</p>
+
+            <div class="stat">
+                <div>🎮 Мультиплеер рейтинг</div>
+                <div class="stat-value" id="pts_multi">—</div>
+            </div>
+
+            <div class="stat">
+                <div>⭐ Соло рекорд</div>
+                <div class="stat-value" id="pts_solo">—</div>
+            </div>
+
+            <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8000';
+
+        async function loadProfile() {
+            const token = localStorage.getItem('access_token');
+            if (!token) { window.location.href = 'index.html'; return; }
+
+            try {
+                const res = await fetch(`${API}/api/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    document.getElementById('nickname').innerText = user.nickname;
+                    document.getElementById('email').innerText = user.email;
+                    document.getElementById('pts_multi').innerText = user.pts_multiplayer;
+                    document.getElementById('pts_solo').innerText = user.pts_solo_record;
+                    if (user.avatar_url && user.avatar_url !== '/assets/default_avatar.png') {
+                        document.getElementById('avatar').src = user.avatar_url;
+                    }
+                } else {
+                    localStorage.removeItem('access_token');
+                    window.location.href = 'index.html';
+                }
+            } catch(e) { console.error('Ошибка загрузки профиля'); }
+        }
+
+        async function uploadAvatar(file) {
+            const token = localStorage.getItem('access_token');
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const res = await fetch(`${API}/api/avatar`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ avatar_url: e.target.result })
+                        });
+                        if (res.ok) resolve(e.target.result);
+                        else reject();
+                    } catch(err) { reject(err); }
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        document.getElementById('avatar_input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                try {
+                    const url = await uploadAvatar(file);
+                    document.getElementById('avatar').src = url;
+                } catch(err) {
+                    alert('❌ Ошибка загрузки');
+                }
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = 'index.html';
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>

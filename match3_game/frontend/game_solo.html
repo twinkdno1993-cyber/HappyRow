@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ВесёлыйРяд | Соло игра</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            min-height: 100vh;
+        }
+        .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid #ff1493;
+            border-radius: 16px;
+            margin-bottom: 25px;
+        }
+        .logo {
+            font-size: 1.6rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #fff, #ff1493);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 20px;
+            padding: 8px 15px;
+            border-radius: 10px;
+            transition: 0.3s;
+        }
+        .nav-links a:hover { background: rgba(255, 20, 147, 0.2); }
+        .game-card {
+            background: rgba(15, 15, 25, 0.95);
+            border: 1px solid #ff1493;
+            border-radius: 24px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.2);
+        }
+        h2 { color: #ff1493; margin-bottom: 20px; font-size: 28px; }
+        canvas {
+            background: #1a1a2e;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(255, 20, 147, 0.3);
+            margin: 15px 0;
+        }
+        .score {
+            font-size: 42px;
+            font-weight: bold;
+            color: #ff1493;
+            margin: 15px 0;
+            text-shadow: 0 0 10px rgba(255,20,147,0.5);
+        }
+        .success { background: rgba(0,255,0,0.15); color: #0f0; padding: 10px; border-radius: 12px; margin-top: 10px; border: 1px solid #0f0; }
+        .error { background: rgba(255,0,0,0.15); color: #f55; padding: 10px; border-radius: 12px; margin-top: 10px; border: 1px solid #f00; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navbar">
+            <div class="logo">🎮 ВесёлыйРяд | СОЛО</div>
+            <div class="nav-links">
+                <a href="index.html">Главная</a>
+                <a href="profile.html">Профиль</a>
+                <a href="game_multi.html">Мультиплеер</a>
+            </div>
+        </div>
+
+        <div class="game-card">
+            <h2>✨ Три в ряд ✨</h2>
+            <canvas id="gameCanvas" width="480" height="480"></canvas>
+            <div class="score">🏆 <span id="scoreValue">0</span> 🏆</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const SIZE = 8;
+        const TILE_SIZE = 60;
+        
+        const TILES = ['🔴', '🔵', '🟢', '🟡', '🟣', '🟠'];
+        const COLORS = {
+            '🔴': '#ff4757',
+            '🔵': '#45aaf2',
+            '🟢': '#2ed573',
+            '🟡': '#ffa502',
+            '🟣': '#a55eea',
+            '🟠': '#ff7f50'
+        };
+
+        let board = [];
+        let selectedRow = null;
+        let selectedCol = null;
+        let currentScore = 0;
+        let isAnimating = false;
+        let gameActive = true;
+        let saveTimeout = null;
+        const API_URL = 'http://localhost:8000';
+
+        function init() {
+            canvas.addEventListener('click', handleCanvasClick);
+            loadSavedGame();
+        }
+
+        function createRandomBoard() {
+            const newBoard = [];
+            for (let i = 0; i < SIZE; i++) {
+                newBoard[i] = [];
+                for (let j = 0; j < SIZE; j++) {
+                    newBoard[i][j] = TILES[Math.floor(Math.random() * TILES.length)];
+                }
+            }
+            return newBoard;
+        }
+
+        function findCombinations(board) {
+            const matches = [];
+            for (let row = 0; row < SIZE; row++) {
+                let length = 1;
+                for (let col = 1; col < SIZE; col++) {
+                    if (board[row][col] === board[row][col-1]) length++;
+                    else {
+                        if (length >= 3) {
+                            for (let c = col - length; c < col; c++) matches.push([row, c]);
+                        }
+                        length = 1;
+                    }
+                }
+                if (length >= 3) {
+                    for (let c = SIZE - length; c < SIZE; c++) matches.push([row, c]);
+                }
+            }
+            for (let col = 0; col < SIZE; col++) {
+                let length = 1;
+                for (let row = 1; row < SIZE; row++) {
+                    if (board[row][col] === board[row-1][col]) length++;
+                    else {
+                        if (length >= 3) {
+                            for (let r = row - length; r < row; r++) matches.push([r, col]);
+                        }
+                        length = 1;
+                    }
+                }
+                if (length >= 3) {
+                    for (let r = SIZE - length; r < SIZE; r++) matches.push([r, col]);
+                }
+            }
+            return matches;
+        }
+
+        function clearAndDrop(board, addPoints) {
+            let totalPoints = addPoints;
+            let hasMatches = true;
+            let maxIterations = 100;
+            
+            while (hasMatches && maxIterations-- > 0) {
+                const matches = findCombinations(board);
+                if (matches.length === 0) {
+                    hasMatches = false;
+                    break;
+                }
+                totalPoints += matches.length * 10;
+                for (let [row, col] of matches) board[row][col] = null;
+                
+                for (let col = 0; col < SIZE; col++) {
+                    const columnTiles = [];
+                    for (let row = SIZE - 1; row >= 0; row--) {
+                        if (board[row][col] !== null) columnTiles.push(board[row][col]);
+                    }
+                    while (columnTiles.length < SIZE) {
+                        columnTiles.push(TILES[Math.floor(Math.random() * TILES.length)]);
+                    }
+                    for (let row = 0; row < SIZE; row++) {
+                        board[SIZE - 1 - row][col] = columnTiles[row];
+                    }
+                }
+            }
+            return totalPoints;
+        }
+
+        function isValidMove(board, r1, c1, r2, c2) {
+            if (Math.abs(r1 - r2) + Math.abs(c1 - c2) !== 1) return false;
+            const testBoard = board.map(row => [...row]);
+            [testBoard[r1][c1], testBoard[r2][c2]] = [testBoard[r2][c2], testBoard[r1][c1]];
+            return findCombinations(testBoard).length > 0;
+        }
+
+        async function saveGameToServer() {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+            
+            try {
+                await fetch(`${API_URL}/api/solo-score`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ score: currentScore })
+                });
+            } catch(e) { console.log('Автосохранение:', e); }
+        }
+
+        function autoSave() {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveGameToServer();
+            }, 1000);
+        }
+
+        function makeMove(r1, c1, r2, c2) {
+            if (!gameActive || isAnimating) return false;
+            if (!isValidMove(board, r1, c1, r2, c2)) return false;
+            
+            isAnimating = true;
+            [board[r1][c1], board[r2][c2]] = [board[r2][c2], board[r1][c1]];
+            drawBoard();
+            
+            setTimeout(() => {
+                const newPoints = clearAndDrop(board, 0);
+                if (newPoints > 0) {
+                    currentScore += newPoints;
+                    document.getElementById('scoreValue').innerText = currentScore;
+                    drawBoard();
+                    autoSave();
+                } else {
+                    [board[r1][c1], board[r2][c2]] = [board[r2][c2], board[r1][c1]];
+                    drawBoard();
+                }
+                isAnimating = false;
+                gameActive = true;
+            }, 150);
+            
+            gameActive = false;
+            return true;
+        }
+
+        function handleCanvasClick(e) {
+            if (isAnimating) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            const col = Math.floor(x / TILE_SIZE);
+            const row = Math.floor(y / TILE_SIZE);
+            
+            if (row < 0 || row >= SIZE || col < 0 || col >= SIZE) return;
+            
+            if (selectedRow === null) {
+                selectedRow = row;
+                selectedCol = col;
+                drawBoard();
+            } else {
+                makeMove(selectedRow, selectedCol, row, col);
+                selectedRow = null;
+                selectedCol = null;
+                drawBoard();
+            }
+        }
+
+        function drawBoard() {
+            for (let row = 0; row < SIZE; row++) {
+                for (let col = 0; col < SIZE; col++) {
+                    const x = col * TILE_SIZE;
+                    const y = row * TILE_SIZE;
+                    const tile = board[row][col];
+                    ctx.fillStyle = COLORS[tile] || '#2d3436';
+                    ctx.fillRect(x, y, TILE_SIZE - 2, TILE_SIZE - 2);
+                    if (tile) {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = 'bold 34px "Segoe UI"';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(tile, x + TILE_SIZE/2, y + TILE_SIZE/2);
+                    }
+                    if (selectedRow === row && selectedCol === col) {
+                        ctx.strokeStyle = '#ffd700';
+                        ctx.lineWidth = 4;
+                        ctx.strokeRect(x, y, TILE_SIZE - 2, TILE_SIZE - 2);
+                    }
+                }
+            }
+        }
+
+        async function loadSavedGame() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                startNewGame();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/api/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const user = await response.json();
+                    currentScore = user.pts_solo_record || 0;
+                    document.getElementById('scoreValue').innerText = currentScore;
+                }
+            } catch(e) { console.log('Ошибка загрузки рекорда'); }
+            
+            startNewGame();
+        }
+
+        function startNewGame() {
+            board = createRandomBoard();
+            selectedRow = null;
+            gameActive = true;
+            isAnimating = false;
+            const initialPoints = clearAndDrop(board, 0);
+            if (initialPoints > 0) {
+                currentScore += initialPoints;
+                document.getElementById('scoreValue').innerText = currentScore;
+                autoSave();
+            }
+            drawBoard();
+        }
+
+        window.addEventListener('beforeunload', () => {
+            saveGameToServer();
+        });
+
+        init();
+    </script>
+</body>
+</html>
