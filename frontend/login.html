@@ -2,63 +2,203 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход | ВесёлыйРяд</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #0a0a0f;
-            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a0a1a 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         }
-        .card {
+
+        .login-container {
             background: rgba(15, 15, 25, 0.95);
-            border: 1px solid #ff1493;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 20, 147, 0.5);
             border-radius: 24px;
-            padding: 2rem;
-            width: 400px;
-            text-align: center;
-            box-shadow: 0 0 30px rgba(255, 20, 147, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 0 50px rgba(255, 20, 147, 0.2);
+            transition: all 0.3s ease;
         }
-        h2 { color: #ff1493; margin-bottom: 1.5rem; }
+
+        .login-container:hover {
+            box-shadow: 0 0 60px rgba(255, 20, 147, 0.3);
+            border-color: #ff1493;
+        }
+
+        h1 {
+            text-align: center;
+            background: linear-gradient(135deg, #fff, #ff1493);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ff1493;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
         input {
             width: 100%;
-            padding: 12px;
-            margin: 8px 0;
+            padding: 14px 16px;
             background: rgba(20, 20, 30, 0.9);
-            border: 1px solid #333;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             color: #fff;
+            font-size: 16px;
+            transition: all 0.3s ease;
         }
+
+        input:focus {
+            outline: none;
+            border-color: #ff1493;
+            box-shadow: 0 0 10px rgba(255, 20, 147, 0.3);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
         button {
+            width: 100%;
+            padding: 14px;
             background: linear-gradient(135deg, #ff1493, #ff6b9d);
             color: white;
             border: none;
-            padding: 12px;
-            width: 100%;
             border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 1rem;
+            transition: all 0.3s ease;
+            margin-top: 10px;
         }
-        .success { color: #0f0; }
-        .error { color: #f55; }
-        a { color: #ff1493; text-decoration: none; }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 20, 147, 0.4);
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .success {
+            background: rgba(0, 255, 0, 0.15);
+            color: #0f0;
+            border: 1px solid #0f0;
+        }
+
+        .error {
+            background: rgba(255, 0, 0, 0.15);
+            color: #ff6b6b;
+            border: 1px solid #ff1493;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 25px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+        }
+
+        .register-link a {
+            color: #ff1493;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .register-link a:hover {
+            text-shadow: 0 0 5px #ff1493;
+        }
+
+        .test-accounts {
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(255, 20, 147, 0.1);
+            border-radius: 12px;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .test-accounts p {
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 8px;
+        }
+
+        .test-accounts code {
+            color: #ff1493;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>🔐 Вход в игру</h2>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Пароль">
+    <div class="login-container">
+        <h1>🎮 ВесёлыйРяд</h1>
+        <div class="subtitle">Войдите в свой аккаунт</div>
+
+        <div class="input-group">
+            <label>📧 Email</label>
+            <input type="email" id="email" placeholder="example@mail.com" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+            <label>🔒 Пароль</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+
         <button onclick="login()">Войти</button>
-        <div id="message" style="margin-top: 1rem;"></div>
-        <p style="margin-top: 1rem;">Нет аккаунта? <a href="register.html">Регистрация</a></p>
+
+        <div id="message" class="message"></div>
+
+        <div class="register-link">
+            Нет аккаунта? <a href="register.html">Зарегистрироваться</a>
+        </div>
+
+        <div class="test-accounts">
+            <p>📋 Тестовые аккаунты:</p>
+            <p>🔴 Админ: <code>test@match3.com</code> / <code>123456</code></p>
+            <p>🟢 Игрок: <code>player@test.com</code> / <code>123456</code></p>
+        </div>
     </div>
 
     <script>
+        // Определяем API URL автоматически (работает и локально, и на Render)
         const API = window.location.origin;
 
         async function login() {
@@ -66,27 +206,62 @@
             const password = document.getElementById('password').value;
             const messageDiv = document.getElementById('message');
 
-            try {
-                const res = await fetch(`${API}/api/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
+            // Простая валидация
+            if (!email || !password) {
+                messageDiv.innerHTML = '<div class="error">❌ Заполните все поля</div>';
+                return;
+            }
 
-                if (res.ok) {
+            // Очищаем предыдущее сообщение
+            messageDiv.innerHTML = '<div style="color: #ff1493;">⏳ Вход...</div>';
+
+            try {
+                const response = await fetch(`${API}/api/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        email: email.trim(), 
+                        password: password 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Сохраняем токен
                     localStorage.setItem('access_token', data.access_token);
                     messageDiv.innerHTML = '<div class="success">✅ Вход выполнен! Перенаправление...</div>';
+                    
+                    // Перенаправляем на главную через секунду
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 1500);
                 } else {
-                    messageDiv.innerHTML = `<div class="error">❌ ${data.detail || 'Неверный email или пароль'}</div>`;
+                    // Ошибка авторизации
+                    let errorText = 'Ошибка входа';
+                    if (data.detail) {
+                        if (typeof data.detail === 'string') {
+                            errorText = data.detail;
+                        } else if (Array.isArray(data.detail)) {
+                            errorText = data.detail[0]?.msg || 'Неверные данные';
+                        }
+                    }
+                    messageDiv.innerHTML = `<div class="error">❌ ${errorText}</div>`;
                 }
-            } catch(e) {
-                messageDiv.innerHTML = '<div class="error">❌ Ошибка соединения с сервером</div>';
+            } catch (error) {
+                console.error('Login error:', error);
+                messageDiv.innerHTML = '<div class="error">❌ Ошибка соединения с сервером. Проверьте интернет.</div>';
             }
         }
+
+        // Добавляем возможность войти по Enter
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
     </script>
 </body>
 </html>
